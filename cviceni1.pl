@@ -27,7 +27,7 @@ reseniWorfovaProblemu(PohlaviDitete, PohlaviRodice1, PohlaviRodice2) :- rika(Dit
                                                                             DitePravda=[]    % "Dite lhalo"
                                                                         ], 
                                                                         Rodic2Pravda),
-                                                                        overVyroky(Rodic1Pravda),
+                                                                        overVyroky(Rodic1Pravda), % Zkontrolujeme, jestli jsou vyroky vybrane jako pravdive skutecne splnitelne
                                                                         overVyroky(Rodic2Pravda),
-                                                                        print("[Jake pohlavi reklo dite = Jakeho pohlavi dite skutecne je] => "),
+                                                                        print("[Za jake pohlavi se dite oznacilo = Jakeho pohlavi dite skutecne je] => "),
                                                                         print(DitePravda).
