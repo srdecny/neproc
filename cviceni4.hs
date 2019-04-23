@@ -80,9 +80,11 @@ nejdelsiSingleRun log =
   let serazeniUzivatele = [uzivatel | (Zaznam _ uzivatel _ ) <- sort log]
   in (take 1 . reverse . sortBy (compare `on` snd) . map ( \uzivatel -> (head uzivatel, length uzivatel)). group) serazeniUzivatele
 
-neprihlaseneVybery :: Zaznamy -> Integer
-neprihlaseneVybery = undefined
-
+neprihlaseneVybery :: Zaznamy -> Int
+neprihlaseneVybery log = 
+  let setridenyLog = sort log
+      seznamVyhovujicichUzivatelu = filter (\uzivatel -> length uzivatel == 5) (serazeniUzivatele log)
+  in sum (map (\uzivatel -> pocetNeautorizovanychVyberu uzivatel (filter (jeOperaceUzivatele uzivatel) setridenyLog)) seznamVyhovujicichUzivatelu)  
 
 -- Pomocne funkce
 vydelek :: Uzivatel -> Zaznamy -> Integer
@@ -93,3 +95,36 @@ vydelek hledanyUzivatel log =
 
 instance Ord Zaznam where
   compare (Zaznam cas1 _ _) (Zaznam cas2 _ _) = compare cas1 cas2 
+
+jePrihlaseni :: Zaznam -> Bool
+jePrihlaseni (Zaznam _ _ Prihlaseni) = True
+jePrihlaseni _ = False
+
+jeOdhlaseni :: Zaznam -> Bool
+jeOdhlaseni (Zaznam _ _ Odhlaseni) = True
+jeOdhlaseni _ = False
+
+jeVyber :: Zaznam -> Bool
+jeVyber (Zaznam _ _ (Vyber _)) = True
+jeVyber _ = False
+
+jeOperaceUzivatele :: Uzivatel -> Zaznam -> Bool
+jeOperaceUzivatele filtrovanyUzivatel (Zaznam _ uzivatel _) = uzivatel == filtrovanyUzivatel
+
+pocetNeautorizovanychVyberu :: Uzivatel -> Zaznamy -> Int
+pocetNeautorizovanychVyberu uzivatel log = 
+
+      -- bez ujmy na obecnosti jako posledni operaci doplnime odhlaseni pro osetreni situace, kdy na konci logu uzivatel neni odhlasen
+      -- v pripade odstraneni tohoto workaroundu neni zajisteno, ze pro kazdy index prihlaseni existuje vetsi index odhlaseni, tedy neni mozno bezpecne pouzit operator !!
+      -- v takovem pripade by se misto operatoru !! muselo pouzit take 1 a pracovat s Maybe monadou, do cehoz se mi fakt nechce.
+  let upravenyLog = log ++ [(Zaznam ((toInteger . length) log) uzivatel Odhlaseni)]
+      indexyPrihlaseni = findIndices jePrihlaseni upravenyLog
+      indexyOdhlaseni = (findIndices jeOdhlaseni upravenyLog)
+      indexyVyberu = findIndices jeVyber upravenyLog
+      -- vytvoreni seznamu se seznamy indexu zacatku a konce vsech intervalu indexu operaci, ktere jsou autorizovane
+      autorizovaneIntervaly = map (\indexPrihlaseni -> [indexPrihlaseni .. [indexOdhlaseni | indexOdhlaseni <- indexyOdhlaseni, indexOdhlaseni > indexPrihlaseni] !! 0]) indexyPrihlaseni
+      indexyAutorizovanychOperaci = (nub. concat) [autorizovanaOperace | autorizovanaOperace <- autorizovaneIntervaly]
+    
+  in length (indexyVyberu \\ indexyAutorizovanychOperaci)
+
+
