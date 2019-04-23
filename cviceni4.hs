@@ -1,5 +1,6 @@
 import Data.List
 import Data.Function
+import Data.Ord
 
 type Castka = Integer
 
@@ -54,39 +55,41 @@ demoPrvniZaznam (Zaznam _ jm _:_) = jm
 {- Ukol zacina tady. Misto `undefined` dodejte definice funkci, ktere z logu
  - vytahnou pozadovany vysledek. -}
 serazeniUzivatele :: Zaznamy -> [Uzivatel]
-serazeniUzivatele list = (sort . nub) [uzivatel | Zaznam _ uzivatel _ <- list]
+serazeniUzivatele log = (sort . nub) [uzivatel | Zaznam _ uzivatel _ <- log]
 
 top10vyber :: Zaznamy -> [(Cas, Castka)]
-top10vyber(list) =  (take 10 . reverse . sortBy (compare `on` snd)) [(cas, castka)| Zaznam cas _ (Vyber castka) <- list]
+top10vyber log = (take 10 . reverse . sortBy (compare `on` snd)) [(cas, castka)| Zaznam cas _ (Vyber castka) <- log]
 
 top10pripis :: Zaznamy -> [(Uzivatel, Castka)]
-top10pripis (list) = (take 10 . sortBy (compare `on` snd)) [ (jmeno, castka) | Zaznam _ jmeno (Pripis castka) <- list]
+top10pripis log = (take 10 . sortBy (compare `on` snd)) [ (jmeno, castka) | Zaznam _ jmeno (Pripis castka) <- log]
 
-topUzivatel :: Zaznamy -> [(Int, Uzivatel)]  
-topUzivatel (list) = (take 1 . reverse . sortBy (compare `on` fst) . frequency) [jmeno | Zaznam _ jmeno _ <- list]
+topUzivatel :: Zaznamy -> [(Uzivatel, Int)]  
+topUzivatel log = (take 1 . reverse . sortBy (compare `on` snd) . map ( \uzivatel -> (head uzivatel, length uzivatel)) . group . sort) [jmeno | Zaznam _ jmeno _ <- log]
 
 topPrirustek :: Zaznamy -> [(Integer, Uzivatel)]
-topPrirustek (list) = (take 1 .reverse . sortBy (compare `on` fst)) (zip (map (`vydelek` list) (serazeniUzivatele list)) (serazeniUzivatele list))
+topPrirustek log = (take 1 .reverse . sortBy (compare `on` fst)) (zip (map (`vydelek` log) (serazeniUzivatele log)) (serazeniUzivatele log))
 
 -- prumer vyberu spocitejte zaokrouhleny dolu
-prumerVyberuJ :: Zaznamy -> [(Integer, Uzivatel)]
-prumerVyberuJ list = undefined
+prumerVyberuJ :: Zaznamy -> Integer
+prumerVyberuJ log = 
+  let vybery = [castka| Zaznam _ uzivatel (Vyber castka) <- log, head uzivatel == 'J']
+  in sum(vybery) `div` genericLength(vybery)
 
-nejdelsiSingleRun :: Zaznamy -> Uzivatel
-nejdelsiSingleRun = undefined
+nejdelsiSingleRun :: Zaznamy -> [(Uzivatel, Int)]
+nejdelsiSingleRun log = 
+  let serazeniUzivatele = [uzivatel | (Zaznam _ uzivatel _ ) <- sort log]
+  in (take 1 . reverse . sortBy (compare `on` snd) . map ( \uzivatel -> (head uzivatel, length uzivatel)). group) serazeniUzivatele
 
 neprihlaseneVybery :: Zaznamy -> Integer
 neprihlaseneVybery = undefined
 
 
 -- Pomocne funkce
-frequency :: Ord a => [a] -> [(Int,a)] 
-frequency list = map (\l -> (length l, head l)) (group (sort list))
-
 vydelek :: Uzivatel -> Zaznamy -> Integer
-vydelek hledanyUzivatel list = 
-  let pripisy = [castka | Zaznam _ uzivatel (Pripis castka) <- list, uzivatel == hledanyUzivatel]
-      vybery = [castka | Zaznam _ uzivatel (Vyber castka) <- list, uzivatel == hledanyUzivatel]
+vydelek hledanyUzivatel log = 
+  let pripisy = [castka | Zaznam _ uzivatel (Pripis castka) <- log, uzivatel == hledanyUzivatel]
+      vybery = [castka | Zaznam _ uzivatel (Vyber castka) <- log, uzivatel == hledanyUzivatel]
   in sum(pripisy) - sum(vybery)
 
-
+instance Ord Zaznam where
+  compare (Zaznam cas1 _ _) (Zaznam cas2 _ _) = compare cas1 cas2 
